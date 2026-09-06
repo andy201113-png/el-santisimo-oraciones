@@ -185,7 +185,6 @@
     function saveState() {
       try {
         const toStore = { view: state.view, listIndex: state.listIndex };
-        // No guardamos oracionActual porque se deduce del id en la URL
         localStorage.setItem('oraciones_state', JSON.stringify(toStore));
       } catch (e) {}
     }
@@ -208,31 +207,54 @@
       setTimeout(() => toast.classList.remove('visible'), 2500);
     }
 
-    // --- ACTUALIZAR URL CON ID ---
-    function updateUrl(oracion) {
-      if (!oracion || !oracion.id) return;
-      const url = new URL(window.location);
-      url.searchParams.set('id', oracion.id);
-      window.history.pushState({}, '', url);
+    // --- GENERAR SLUG AMIGABLE ---
+    function generarSlug(titulo) {
+      return titulo
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quitar acentos
+        .replace(/[^a-z0-9]+/g, '-') // reemplazar espacios y especiales por guiones
+        .replace(/^-+|-+$/g, ''); // quitar guiones al inicio y final
     }
 
-    // --- OBTENER ID DE LA URL ---
+    // --- ACTUALIZAR URL CON SLUG (en lugar de id) ---
+    function updateUrl(oracion) {
+      if (!oracion || !oracion.id) return;
+      const slug = generarSlug(oracion.titulo);
+      const url = new URL(window.location);
+      // Cambiamos la ruta a /oracion/slug y eliminamos el parámetro id
+      const newPath = '/oracion/' + slug;
+      // Usamos pushState para cambiar la URL sin recargar
+      window.history.pushState({}, '', newPath + window.location.search);
+    }
+
+    // --- OBTENER SLUG DE LA RUTA (si existe) ---
+    function getOracionSlugFromUrl() {
+      const path = window.location.pathname;
+      const match = path.match(/^\/oracion\/(.+)/);
+      if (match) {
+        return match[1];
+      }
+      return null;
+    }
+
+    // --- OBTENER ID DE LA URL (por si usamos ?id=XX) ---
     function getOracionIdFromUrl() {
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
       return id ? parseInt(id) : null;
     }
 
-    // --- COMPARTIR ORACIÓN (con enlace único) ---
+    // --- COMPARTIR ORACIÓN (con slug en la URL) ---
     function compartirOracion(oracion) {
       if (!oracion) {
         showToast('❌ No hay oración para compartir');
         return;
       }
 
-      // Construir la URL con el id de la oración
-      const baseUrl = window.location.origin + window.location.pathname;
-      const shareUrl = baseUrl + '?id=' + oracion.id;
+      const slug = generarSlug(oracion.titulo);
+      // Construir la URL amigable: /oracion/slug
+      const baseUrl = window.location.origin;
+      const shareUrl = baseUrl + '/oracion/' + slug;
 
       const titulo = oracion.titulo || 'Oración del día';
       const extracto = oracion.extracto || 'Una oración para el alma';
@@ -295,7 +317,7 @@
       state.oracionActual = oracion;
       saveState();
 
-      // Actualizar la URL con el id
+      // Actualizar la URL con el slug en lugar del id
       updateUrl(oracion);
 
       let html = '';
@@ -374,10 +396,8 @@
       state.view = 'list';
       saveState();
 
-      // Limpiar el parámetro id de la URL
-      const url = new URL(window.location);
-      url.searchParams.delete('id');
-      window.history.pushState({}, '', url);
+      // Al ir a lista, limpiamos la ruta (no mostramos /oracion/slug)
+      window.history.pushState({}, '', window.location.pathname);
 
       let html = `
         <div style="margin-bottom:12px;">
@@ -487,10 +507,8 @@
       state.view = 'lecture';
       saveState();
 
-      // Limpiar el parámetro id de la URL
-      const url = new URL(window.location);
-      url.searchParams.delete('id');
-      window.history.pushState({}, '', url);
+      // Limpiar la ruta (sin /oracion)
+      window.history.pushState({}, '', window.location.pathname);
 
       if (!state.lecturaData) {
         dynamicContent.innerHTML = `<p style="text-align:center; color:#6a7a6a; padding:20px;">Cargando lectura del día...</p>`;
@@ -574,23 +592,36 @@
           state.allOraciones = data.oraciones || [];
           if (!state.allOraciones.length) throw new Error('No hay oraciones');
 
-          // 1. Verificar si hay un id en la URL
-          const idFromUrl = getOracionIdFromUrl();
           let oracionInicial = null;
 
-          if (idFromUrl) {
-            // Buscar la oración con ese id
-            oracionInicial = state.allOraciones.find(o => o.id === idFromUrl);
+          // 1. Intentar obtener slug de la ruta
+          const slug = getOracionSlugFromUrl();
+          if (slug) {
+            // Buscar por slug (comparar normalizado)
+            oracionInicial = state.allOraciones.find(o => {
+              return generarSlug(o.titulo) === slug;
+            });
             if (oracionInicial) {
-              // Si existe, la usamos
               state.oracionActual = oracionInicial;
               renderSingleView(oracionInicial);
               scrollToTop();
-              return; // Salir, ya renderizamos
+              return;
             }
           }
 
-          // 2. Si no hay id o no se encontró, usar la destacada o la guardada
+          // 2. Intentar obtener id de la query string
+          const id = getOracionIdFromUrl();
+          if (id) {
+            oracionInicial = state.allOraciones.find(o => o.id === id);
+            if (oracionInicial) {
+              state.oracionActual = oracionInicial;
+              renderSingleView(oracionInicial);
+              scrollToTop();
+              return;
+            }
+          }
+
+          // 3. Usar localStorage o destacada
           const saved = loadState();
           if (saved && saved.view === 'list') {
             state.view = 'list';
@@ -603,7 +634,7 @@
             return;
           }
 
-          // 3. Por defecto: mostrar la destacada
+          // 4. Por defecto: mostrar la destacada
           const destacada = state.allOraciones.find(o => o.destacado === true);
           oracionInicial = destacada || state.allOraciones[0];
           state.oracionActual = oracionInicial;
@@ -632,8 +663,17 @@
       abrirApp();
     });
 
-    // --- MANEJAR EL BOTÓN "ATRÁS" DEL NAVEGADOR PARA QUE FUNCIONE CON LA URL ---
+    // --- MANEJAR EL BOTÓN "ATRÁS" DEL NAVEGADOR (para slugs) ---
     window.addEventListener('popstate', function() {
+      const slug = getOracionSlugFromUrl();
+      if (slug) {
+        const oracion = state.allOraciones.find(o => generarSlug(o.titulo) === slug);
+        if (oracion) {
+          renderSingleView(oracion);
+          return;
+        }
+      }
+      // Si no hay slug, intentar con id
       const id = getOracionIdFromUrl();
       if (id) {
         const oracion = state.allOraciones.find(o => o.id === id);
@@ -642,7 +682,7 @@
           return;
         }
       }
-      // Si no hay id, ir a la destacada
+      // Si nada, ir a la destacada
       const destacada = state.allOraciones.find(o => o.destacado === true);
       if (destacada) renderSingleView(destacada);
     });
