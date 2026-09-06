@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <title>El Santísimo - Oración del día</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background:#0f1a0f; color:#f0ece6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding:16px 16px 30px;
+      line-height:1.6;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    .container { max-width:680px; margin:0 auto; width:100%; flex:1; }
+
+    .header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:20px; flex-wrap:wrap; gap:10px;
+    }
+    .header h1 { font-size:22px; font-weight:600; color:#c9a05e; letter-spacing:1px; }
+    .header .app-badge {
+      background:#c9a05e; color:#0f1a0f; padding:6px 14px; border-radius:30px;
+      font-size:14px; font-weight:600; text-decoration:none; display:inline-flex;
+      align-items:center; gap:6px; white-space:nowrap; transition:background .2s;
+      border:none; cursor:pointer;
+    }
+    .header .app-badge:hover { background:#dbb87a; }
+
+    .ad-container {
+      background:#1a241a; border-radius:12px; padding:12px;
+      margin: 0 0 16px 0;
+      display:flex; justify-content:center; align-items:center;
+      min-height:280px; border:1px solid #2f3f2f; width:100%;
+    }
+    .ad-container .ad-placeholder { color:#6a7a6a; font-size:14px; text-align:center; }
+
+    #dynamicContent {
+      background:#1e2a1e;
+      border-radius:16px;
+      padding:20px 18px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.6);
+      margin-bottom:16px;
+    }
+
+    .video-wrapper {
+      margin:12px 0 16px;
+      border-radius:12px; overflow:hidden;
+      background:#0a120a; display:flex; justify-content:center;
+      aspect-ratio:16/9; max-height:400px;
+    }
+    .video-wrapper video { width:100%; height:100%; object-fit:contain; background:#000; display:block; }
+
+    .action-buttons-inline {
+      display:flex; flex-wrap:wrap; gap:12px;
+      margin: 12px 0 16px;
+      justify-content:center;
+    }
+    .btn {
+      background:#2f3f2f; color:#f0ece6; border:none; border-radius:30px;
+      padding:12px 22px; font-size:16px; font-weight:500; cursor:pointer;
+      transition:background .2s; display:inline-flex; align-items:center;
+      gap:8px; text-decoration:none; flex:1 1 auto; justify-content:center;
+    }
+    .btn-primary { background:#c9a05e; color:#0f1a0f; }
+    .btn-primary:hover { background:#dbb87a; }
+    .btn-outline { background:transparent; border:1px solid #c9a05e; color:#c9a05e; }
+    .btn-outline:hover { background:#2f3f3f; }
+    .btn-lista {
+      background:#3a5a3a; color:#f0ece6; border:none; border-radius:30px;
+      padding:14px 24px; font-size:17px; font-weight:600; cursor:pointer;
+      transition:background .2s; display:inline-flex; align-items:center;
+      gap:10px; text-decoration:none; flex:1 1 auto; justify-content:center;
+    }
+    .btn-lista:hover { background:#4a7a4a; }
+    .btn-volver {
+      background:#2f3f2f; color:#f0ece6; border:none; border-radius:30px;
+      padding:12px 22px; font-size:16px; font-weight:500; cursor:pointer;
+      transition:background .2s; display:inline-flex; align-items:center;
+      gap:8px; text-decoration:none; flex:1 1 auto; justify-content:center;
+    }
+    .btn-volver:hover { background:#3f4f3f; }
+
+    .feed { display:flex; flex-direction:column; gap:16px; }
+    .post {
+      background:#1e2a1e; border-radius:12px; overflow:hidden;
+      box-shadow:0 2px 8px rgba(0,0,0,0.4);
+      cursor:pointer; transition:transform .15s;
+    }
+    .post:hover { transform:scale(1.01); }
+    .post img {
+      width:100%; height:auto; display:block; aspect-ratio:16/9;
+      object-fit:cover; background:#0a120a;
+    }
+    .post-content { padding:14px 16px; }
+    .post-content h3 { color:#c9a05e; font-size:18px; margin-bottom:4px; }
+    .post-content p { color:#b0a890; font-size:15px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .post .leer-mas { display:block; text-align:right; color:#c9a05e; font-weight:600; margin-top:6px; font-size:14px; }
+
+    .loader { text-align:center; padding:16px; color:#6a7a6a; }
+    .loader.hidden { display:none; }
+
+    .lectura-content { color:#f0ece6; }
+    .lectura-content h3 { color:#c9a05e; margin:16px 0 8px; }
+    .lectura-content .referencia { color:#c9a05e; font-weight:600; }
+    .lectura-content blockquote {
+      background:#1a241a; border-left:4px solid #c9a05e;
+      padding:12px 16px; margin:12px 0; border-radius:0 8px 8px 0;
+      font-style:italic;
+    }
+
+    .footer {
+      text-align:center; font-size:13px; color:#5a6a5a;
+      margin-top:20px; border-top:1px solid #2a3a2a; padding-top:16px;
+    }
+    .footer a { color:#c9a05e; text-decoration:none; }
+
+    .toast {
+      position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+      background:#2a3a2a; color:#f0ece6; padding:12px 24px;
+      border-radius:30px; font-size:15px; box-shadow:0 4px 16px rgba(0,0,0,0.6);
+      opacity:0; transition:opacity 0.4s ease; pointer-events:none;
+      z-index:999; border:1px solid #c9a05e;
+    }
+    .toast.visible { opacity:1; }
+
+    @media (max-width:400px) {
+      .header h1 { font-size:18px; }
+      .header .app-badge { font-size:12px; padding:4px 12px; }
+      #dynamicContent { padding:16px; }
+      .btn, .btn-lista, .btn-volver { font-size:14px; padding:10px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>🕯️ El Santísimo</h1>
+    <a href="#" id="downloadAppBtn" class="app-badge">📲 Descargar App</a>
+  </div>
+
+  <div class="ad-container" id="adFixed">
+    <div class="ad-placeholder">
+      <!-- CÓDIGO DEL BANNER 300x250 DE ADSTERRA -->
+      <div style="background:#2a3a2a; width:300px; height:250px; display:flex; align-items:center; justify-content:center; border-radius:8px; color:#6a7a6a; font-size:14px;">
+        [Código banner 300x250]
+      </div>
+    </div>
+  </div>
+
+  <div id="dynamicContent"></div>
+
+  <div class="footer">
+    <p>¿Quieres todas las oraciones sin anuncios?<br>
+    <a href="#" id="downloadAppFooter">Descarga nuestra app gratuita</a></p>
+    <p style="margin-top:10px;">&copy; 2026 · El Santísimo te espera</p>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+  (function() {
+    const ORACIONES_URL = 'https://oraciones-api.vercel.app/oraciones.json';
+    const LECTURAS_URL = 'https://oraciones-api.vercel.app/lecturas.json';
+    const APP_URL = 'https://play.google.com/store/apps/details?id=com.elsantisimoteespera.oracionesdiarias';
+    const BATCH_SIZE = 8;
+
+    const dynamicContent = document.getElementById('dynamicContent');
+    const toast = document.getElementById('toast');
+
+    let state = {
+      view: 'single',
+      oracionActual: null,
+      allOraciones: [],
+      listIndex: 0,
+      lecturaData: null,
+    };
+
+    // --- FUNCIONES DE PERSISTENCIA ---
+    function saveState() {
+      try {
+        const toStore = { view: state.view, listIndex: state.listIndex };
+        // No guardamos oracionActual porque se deduce del id en la URL
+        localStorage.setItem('oraciones_state', JSON.stringify(toStore));
+      } catch (e) {}
+    }
+
+    function loadState() {
+      try {
+        const stored = localStorage.getItem('oraciones_state');
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+      return null;
+    }
+
+    // --- FUNCIONES AUXILIARES ---
+    function openSmartlink(url) { window.open(url, '_blank'); }
+    function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('visible');
+      setTimeout(() => toast.classList.remove('visible'), 2500);
+    }
+
+    // --- ACTUALIZAR URL CON ID ---
+    function updateUrl(oracion) {
+      if (!oracion || !oracion.id) return;
+      const url = new URL(window.location);
+      url.searchParams.set('id', oracion.id);
+      window.history.pushState({}, '', url);
+    }
+
+    // --- OBTENER ID DE LA URL ---
+    function getOracionIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      return id ? parseInt(id) : null;
+    }
+
+    // --- COMPARTIR ORACIÓN (con enlace único) ---
+    function compartirOracion(oracion) {
+      if (!oracion) {
+        showToast('❌ No hay oración para compartir');
+        return;
+      }
+
+      // Construir la URL con el id de la oración
+      const baseUrl = window.location.origin + window.location.pathname;
+      const shareUrl = baseUrl + '?id=' + oracion.id;
+
+      const titulo = oracion.titulo || 'Oración del día';
+      const extracto = oracion.extracto || 'Una oración para el alma';
+
+      const textoLimpio = oracion.textoCompleto
+        ? oracion.textoCompleto.replace(/<[^>]*>/g, '').substring(0, 500) + '...'
+        : extracto;
+
+      const shareData = {
+        title: titulo,
+        text: `🕯️ ${titulo}\n\n${textoLimpio}\n\n🙏 Comparte esta oración con alguien que la necesite.`,
+        url: shareUrl,
+      };
+
+      if (navigator.share) {
+        navigator.share(shareData)
+          .then(() => showToast('✅ ¡Compartido con éxito!'))
+          .catch((err) => {
+            if (err.name !== 'AbortError') {
+              console.error('Error al compartir:', err);
+              fallbackCompartir(shareData);
+            }
+          });
+      } else {
+        fallbackCompartir(shareData);
+      }
+    }
+
+    function fallbackCompartir(shareData) {
+      const textoCompleto = `${shareData.title}\n\n${shareData.text}\n\n${shareData.url}`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(textoCompleto)
+          .then(() => showToast('📋 Enlace copiado al portapapeles. ¡Compártelo!'))
+          .catch(() => copiarTextoAlternativo(textoCompleto));
+      } else {
+        copiarTextoAlternativo(textoCompleto);
+      }
+    }
+
+    function copiarTextoAlternativo(texto) {
+      const textarea = document.createElement('textarea');
+      textarea.value = texto;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('📋 Enlace copiado al portapapeles. ¡Compártelo!');
+      } catch (e) {
+        showToast('💡 Copia el enlace manualmente desde la barra de direcciones.');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // --- RENDER VISTA SINGLE ---
+    function renderSingleView(oracion) {
+      state.view = 'single';
+      state.oracionActual = oracion;
+      saveState();
+
+      // Actualizar la URL con el id
+      updateUrl(oracion);
+
+      let html = '';
+      if (oracion.titulo) {
+        html += `<h2 style="color:#c9a05e; text-align:center; margin-bottom:6px; font-size:24px;">${oracion.titulo}</h2>`;
+      }
+      if (oracion.extracto) {
+        html += `<p style="text-align:center; color:#b0a890; font-size:16px; margin-bottom:12px;">${oracion.extracto}</p>`;
+      }
+      if (oracion.urlVideo) {
+        html += `<div class="video-wrapper"><video controls playsinline preload="metadata"><source src="${oracion.urlVideo}" type="video/mp4">Tu navegador no soporta video.</video></div>`;
+      }
+
+      html += `
+        <div class="action-buttons-inline">
+          <button id="btnAleatoria" class="btn btn-outline">🔄 Oración aleatoria</button>
+          <button id="btnLista" class="btn-lista">📖 Ver lista (${state.allOraciones.length})</button>
+          <button id="btnCompartir" class="btn btn-primary">🙏 Compartir</button>
+          <button id="btnLectura" class="btn btn-outline">📖 Lectura del día</button>
+        </div>
+      `;
+
+      if (oracion.textoCompleto) {
+        html += `<div class="oracion-texto">${oracion.textoCompleto}</div>`;
+      }
+
+      if (!oracion.titulo && !oracion.extracto && !oracion.urlVideo && !oracion.textoCompleto) {
+        html = '<p style="text-align:center; color:#6a7a6a; padding:20px;">Contenido no disponible.</p>';
+      }
+
+      dynamicContent.innerHTML = html;
+
+      // Asignar eventos
+      const btnAleatoria = document.getElementById('btnAleatoria');
+      const btnLista = document.getElementById('btnLista');
+      const btnCompartir = document.getElementById('btnCompartir');
+      const btnLectura = document.getElementById('btnLectura');
+
+      if (btnAleatoria) {
+        btnAleatoria.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (state.allOraciones.length === 0) return;
+          const random = state.allOraciones[Math.floor(Math.random() * state.allOraciones.length)];
+          renderSingleView(random);
+          scrollToTop();
+        });
+      }
+
+      if (btnLista) {
+        btnLista.addEventListener('click', function(e) {
+          e.preventDefault();
+          state.listIndex = 0;
+          renderListView();
+          scrollToTop();
+        });
+      }
+
+      if (btnCompartir) {
+        btnCompartir.addEventListener('click', function(e) {
+          e.preventDefault();
+          compartirOracion(state.oracionActual);
+        });
+      }
+
+      if (btnLectura) {
+        btnLectura.addEventListener('click', function(e) {
+          e.preventDefault();
+          renderLectureView();
+          scrollToTop();
+        });
+      }
+    }
+
+    // --- VISTA LISTA ---
+    function renderListView() {
+      state.view = 'list';
+      saveState();
+
+      // Limpiar el parámetro id de la URL
+      const url = new URL(window.location);
+      url.searchParams.delete('id');
+      window.history.pushState({}, '', url);
+
+      let html = `
+        <div style="margin-bottom:12px;">
+          <button id="backToSingleBtn" class="btn-volver">← Volver a la oración destacada</button>
+        </div>
+        <div class="feed" id="feedContainer"></div>
+        <div class="loader" id="loader">Cargando más oraciones...</div>
+      `;
+      dynamicContent.innerHTML = html;
+
+      const backBtn = document.getElementById('backToSingleBtn');
+      if (backBtn) {
+        backBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const destacada = state.allOraciones.find(o => o.destacado === true);
+          renderSingleView(destacada || state.allOraciones[0]);
+          scrollToTop();
+        });
+      }
+
+      loadNextBatch();
+      window.removeEventListener('scroll', onScroll);
+      window.addEventListener('scroll', onScroll);
+    }
+
+    // --- CARGA POR LOTES ---
+    function loadNextBatch() {
+      const feed = document.getElementById('feedContainer');
+      const loader = document.getElementById('loader');
+      if (!feed) return;
+
+      if (state.listIndex >= state.allOraciones.length) {
+        if (loader) loader.classList.add('hidden');
+        return;
+      }
+
+      const batch = state.allOraciones.slice(state.listIndex, state.listIndex + BATCH_SIZE);
+      state.listIndex += batch.length;
+      saveState();
+
+      batch.forEach(oracion => {
+        const post = document.createElement('div');
+        post.className = 'post';
+        post.addEventListener('click', function() {
+          renderSingleView(oracion);
+          scrollToTop();
+        });
+
+        if (oracion.urlImagen) {
+          const img = document.createElement('img');
+          img.src = oracion.urlImagen;
+          img.alt = oracion.titulo || 'Oración';
+          img.loading = 'lazy';
+          post.appendChild(img);
+        }
+
+        const content = document.createElement('div');
+        content.className = 'post-content';
+        const title = document.createElement('h3');
+        title.textContent = oracion.titulo || 'Oración';
+        content.appendChild(title);
+
+        const excerpt = document.createElement('p');
+        excerpt.textContent = oracion.extracto || 'Haz clic para leer la oración completa.';
+        content.appendChild(excerpt);
+
+        const readMore = document.createElement('span');
+        readMore.className = 'leer-mas';
+        readMore.textContent = 'Ver oración →';
+        content.appendChild(readMore);
+
+        post.appendChild(content);
+        feed.appendChild(post);
+      });
+
+      if (state.listIndex >= state.allOraciones.length) {
+        if (loader) loader.classList.add('hidden');
+      } else {
+        if (loader) loader.classList.remove('hidden');
+      }
+    }
+
+    // --- SCROLL INFINITO ---
+    let scrollTimeout;
+    function onScroll() {
+      if (state.view !== 'list') {
+        window.removeEventListener('scroll', onScroll);
+        return;
+      }
+      if (state.listIndex >= state.allOraciones.length) return;
+
+      const loader = document.getElementById('loader');
+      if (!loader || loader.classList.contains('hidden')) return;
+
+      const rect = loader.getBoundingClientRect();
+      if (rect.top <= window.innerHeight + 100) {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+          loadNextBatch();
+          scrollTimeout = null;
+        }, 200);
+      }
+    }
+
+    // --- VISTA LECTURA ---
+    function renderLectureView() {
+      state.view = 'lecture';
+      saveState();
+
+      // Limpiar el parámetro id de la URL
+      const url = new URL(window.location);
+      url.searchParams.delete('id');
+      window.history.pushState({}, '', url);
+
+      if (!state.lecturaData) {
+        dynamicContent.innerHTML = `<p style="text-align:center; color:#6a7a6a; padding:20px;">Cargando lectura del día...</p>`;
+        fetch(LECTURAS_URL)
+          .then(res => {
+            if (!res.ok) throw new Error('Error al cargar lecturas');
+            return res.json();
+          })
+          .then(data => {
+            if (Array.isArray(data)) {
+              state.lecturaData = data[0] || null;
+            } else if (data.lecturas && Array.isArray(data.lecturas)) {
+              state.lecturaData = data.lecturas[0] || null;
+            } else {
+              state.lecturaData = data;
+            }
+            renderLectureView();
+          })
+          .catch(err => {
+            dynamicContent.innerHTML = `<p style="text-align:center; color:#c9a05e; padding:20px;">❌ No se pudo cargar la lectura.<br><span style="font-size:14px; color:#6a7a6a;">${err.message}</span></p>`;
+          });
+        return;
+      }
+
+      const lect = state.lecturaData;
+      let html = `
+        <div style="margin-bottom:12px;">
+          <button id="backFromLectureBtn" class="btn-volver">← Volver a la oración destacada</button>
+        </div>
+        <div class="lectura-content">
+          <h2 style="color:#c9a05e; text-align:center; margin-bottom:8px;">${lect.liturgia || 'Lectura del día'}</h2>
+      `;
+
+      if (lect.primera_lectura) {
+        html += `<h3>📖 Primera lectura</h3>
+          <p class="referencia">${lect.primera_lectura.referencia || ''}</p>
+          <blockquote>${lect.primera_lectura.texto || ''}</blockquote>`;
+      }
+      if (lect.salmo) {
+        html += `<h3>🎵 Salmo</h3>
+          <p class="referencia">${lect.salmo.referencia || ''}</p>
+          <blockquote>${lect.salmo.texto || ''}</blockquote>`;
+      }
+      if (lect.segunda_lectura) {
+        html += `<h3>📖 Segunda lectura</h3>
+          <p class="referencia">${lect.segunda_lectura.referencia || ''}</p>
+          <blockquote>${lect.segunda_lectura.texto || ''}</blockquote>`;
+      }
+      if (lect.evangelio) {
+        html += `<h3>✝️ Evangelio</h3>
+          <p class="referencia">${lect.evangelio.referencia || ''}</p>
+          <blockquote>${lect.evangelio.texto || ''}</blockquote>`;
+      }
+      if (lect.reflexion) {
+        html += `<h3>💡 Reflexión</h3>
+          <p style="white-space:pre-line;">${lect.reflexion.texto || ''}</p>`;
+      }
+
+      html += `</div>`;
+      dynamicContent.innerHTML = html;
+
+      const backBtn = document.getElementById('backFromLectureBtn');
+      if (backBtn) {
+        backBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const destacada = state.allOraciones.find(o => o.destacado === true);
+          renderSingleView(destacada || state.allOraciones[0]);
+          scrollToTop();
+        });
+      }
+    }
+
+    // --- INICIALIZACIÓN ---
+    function init() {
+      fetch(ORACIONES_URL)
+        .then(res => {
+          if (!res.ok) throw new Error('Error al cargar oraciones');
+          return res.json();
+        })
+        .then(data => {
+          state.allOraciones = data.oraciones || [];
+          if (!state.allOraciones.length) throw new Error('No hay oraciones');
+
+          // 1. Verificar si hay un id en la URL
+          const idFromUrl = getOracionIdFromUrl();
+          let oracionInicial = null;
+
+          if (idFromUrl) {
+            // Buscar la oración con ese id
+            oracionInicial = state.allOraciones.find(o => o.id === idFromUrl);
+            if (oracionInicial) {
+              // Si existe, la usamos
+              state.oracionActual = oracionInicial;
+              renderSingleView(oracionInicial);
+              scrollToTop();
+              return; // Salir, ya renderizamos
+            }
+          }
+
+          // 2. Si no hay id o no se encontró, usar la destacada o la guardada
+          const saved = loadState();
+          if (saved && saved.view === 'list') {
+            state.view = 'list';
+            state.listIndex = saved.listIndex || 0;
+            renderListView();
+            return;
+          } else if (saved && saved.view === 'lecture') {
+            state.view = 'lecture';
+            renderLectureView();
+            return;
+          }
+
+          // 3. Por defecto: mostrar la destacada
+          const destacada = state.allOraciones.find(o => o.destacado === true);
+          oracionInicial = destacada || state.allOraciones[0];
+          state.oracionActual = oracionInicial;
+          state.view = 'single';
+          renderSingleView(oracionInicial);
+          scrollToTop();
+        })
+        .catch(err => {
+          dynamicContent.innerHTML = `<p style="text-align:center; color:#c9a05e; padding:30px;">❌ Error al cargar las oraciones.<br><span style="font-size:14px; color:#6a7a6a;">${err.message}</span></p>`;
+          console.error(err);
+        });
+    }
+
+    // --- EVENTOS GLOBALES: DESCARGA DE APP ---
+    function abrirApp() {
+      window.open(APP_URL, '_blank');
+    }
+
+    document.getElementById('downloadAppBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      abrirApp();
+    });
+
+    document.getElementById('downloadAppFooter').addEventListener('click', function(e) {
+      e.preventDefault();
+      abrirApp();
+    });
+
+    // --- MANEJAR EL BOTÓN "ATRÁS" DEL NAVEGADOR PARA QUE FUNCIONE CON LA URL ---
+    window.addEventListener('popstate', function() {
+      const id = getOracionIdFromUrl();
+      if (id) {
+        const oracion = state.allOraciones.find(o => o.id === id);
+        if (oracion) {
+          renderSingleView(oracion);
+          return;
+        }
+      }
+      // Si no hay id, ir a la destacada
+      const destacada = state.allOraciones.find(o => o.destacado === true);
+      if (destacada) renderSingleView(destacada);
+    });
+
+    // Iniciar
+    init();
+  })();
+</script>
+</body>
+</html>
