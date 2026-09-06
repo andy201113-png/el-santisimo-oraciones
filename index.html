@@ -185,6 +185,7 @@
     function saveState() {
       try {
         const toStore = { view: state.view, listIndex: state.listIndex };
+        // No guardamos oracionActual porque se deduce del id en la URL
         localStorage.setItem('oraciones_state', JSON.stringify(toStore));
       } catch (e) {}
     }
@@ -222,16 +223,16 @@
       return id ? parseInt(id) : null;
     }
 
-    // --- COMPARTIR ORACIÓN (con enlace a la vista previa) ---
+    // --- COMPARTIR ORACIÓN (con enlace único) ---
     function compartirOracion(oracion) {
       if (!oracion) {
         showToast('❌ No hay oración para compartir');
         return;
       }
 
-      // Construir la URL con la ruta de la función serverless
-      const baseUrl = window.location.origin;
-      const shareUrl = baseUrl + '/api/oracion?id=' + oracion.id;
+      // Construir la URL con el id de la oración
+      const baseUrl = window.location.origin + window.location.pathname;
+      const shareUrl = baseUrl + '?id=' + oracion.id;
 
       const titulo = oracion.titulo || 'Oración del día';
       const extracto = oracion.extracto || 'Una oración para el alma';
@@ -499,7 +500,6 @@
             return res.json();
           })
           .then(data => {
-            // La respuesta puede ser un array o un objeto con propiedad "lecturas"
             if (Array.isArray(data)) {
               state.lecturaData = data[0] || null;
             } else if (data.lecturas && Array.isArray(data.lecturas)) {
@@ -579,8 +579,10 @@
           let oracionInicial = null;
 
           if (idFromUrl) {
+            // Buscar la oración con ese id
             oracionInicial = state.allOraciones.find(o => o.id === idFromUrl);
             if (oracionInicial) {
+              // Si existe, la usamos
               state.oracionActual = oracionInicial;
               renderSingleView(oracionInicial);
               scrollToTop();
@@ -588,7 +590,7 @@
             }
           }
 
-          // 2. Si no hay id o no se encontró, usar localStorage o destacada
+          // 2. Si no hay id o no se encontró, usar la destacada o la guardada
           const saved = loadState();
           if (saved && saved.view === 'list') {
             state.view = 'list';
@@ -630,7 +632,7 @@
       abrirApp();
     });
 
-    // --- MANEJAR EL BOTÓN "ATRÁS" DEL NAVEGADOR ---
+    // --- MANEJAR EL BOTÓN "ATRÁS" DEL NAVEGADOR PARA QUE FUNCIONE CON LA URL ---
     window.addEventListener('popstate', function() {
       const id = getOracionIdFromUrl();
       if (id) {
