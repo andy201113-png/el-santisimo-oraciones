@@ -2,7 +2,6 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-// 🔥 TU CONFIGURACIÓN DE FIREBASE (copia tal cual de Firebase Console)
 const firebaseConfig = {
   apiKey: "AIzaSyBbRxOI3RC6ErIsIVyWXc3MtLqKe_AJ3k8",
   authDomain: "el-santisimo-notificaciones.firebaseapp.com",
@@ -15,15 +14,33 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Manejar notificaciones en segundo plano (cuando la app no está abierta)
+// Manejar notificaciones en segundo plano
 messaging.onBackgroundMessage((payload) => {
   console.log('📩 Notificación en background:', payload);
+  
+  // Extraer datos
   const notificationTitle = payload.notification?.title || 'El Santísimo';
-  const notificationOptions = {
-    body: payload.notification?.body || 'Una nueva oración te espera',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    data: payload.data || {}
-  };
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  const notificationBody = payload.notification?.body || 'Una nueva oración te espera';
+  const icon = '/icon-192.png';
+  const clickUrl = payload.data?.url || '/';
+
+  // Mostrar la notificación manualmente
+  self.registration.showNotification(notificationTitle, {
+    body: notificationBody,
+    icon: icon,
+    badge: icon,
+    data: { url: clickUrl },
+    actions: [
+      { action: 'open', title: 'Ver oración' }
+    ]
+  });
+});
+
+// Manejar clic en la notificación
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const urlToOpen = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.openWindow(urlToOpen)
+  );
 });

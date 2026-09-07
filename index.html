@@ -110,7 +110,7 @@
     /* --- Header --- */
     .header {
       display:flex; align-items:center; justify-content:space-between;
-      margin-bottom:20px; flex-wrap:wrap; gap:10px;
+      margin-bottom:12px; flex-wrap:wrap; gap:10px;
     }
     .header h1 { font-size:22px; font-weight:600; color:#c9a05e; letter-spacing:1px; }
     .header .app-badge {
@@ -260,6 +260,24 @@
     }
     .btn-whatsapp:active { transform: scale(0.98); }
 
+    /* ===== BANNER FIJO (fuera del contenido dinámico) ===== */
+    #adBannerContainer {
+      margin: 8px 0 12px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 280px;
+      background: var(--bg-input);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    #adBannerContainer .ad-placeholder {
+      color: var(--text-muted);
+      font-size: 14px;
+      text-align: center;
+    }
+
     /* --- Contenido dinámico --- */
     #dynamicContent {
       background: var(--bg-card);
@@ -348,13 +366,13 @@
     /* --- Botones de instalación y notificaciones --- */
     #btnInstalar, #btnIos, #btnNotificaciones {
       display: none;
-      margin: 6px 0;
+      margin: 4px 0;
       font-size:18px;
       padding:16px 28px;
       min-height:60px;
     }
     #btnNotificaciones {
-      display: inline-flex; /* lo mostramos siempre, pero con texto "Activar" o "Activado" según estado */
+      display: inline-flex;
     }
 
     @media (max-width:400px) {
@@ -366,6 +384,7 @@
       }
       #btnInstalar, #btnIos, #btnNotificaciones { font-size:16px; padding:14px 20px; min-height:54px; }
       .theme-toggle { font-size:16px; padding:6px 12px; }
+      #adBannerContainer { min-height:250px; }
     }
   </style>
 </head>
@@ -381,7 +400,19 @@
     </div>
   </div>
 
-  <!-- BOTONES DE INSTALACIÓN PWA Y NOTIFICACIONES -->
+  <!-- ===== BANNER CUADRADO DE ADSTERRA (SIEMPRE ARRIBA) ===== -->
+  <div id="adBannerContainer">
+    <div class="ad-placeholder">
+      <!-- ===== AQUÍ VA EL CÓDIGO DEL BANNER DE ADSTERRA (300x250) ===== -->
+      <!-- Reemplaza este bloque con el código del banner que te da Adsterra -->
+      <div style="background:#2a3a2a; width:300px; height:250px; display:flex; align-items:center; justify-content:center; border-radius:8px; color:var(--text-muted); font-size:14px; text-align:center;">
+        [BANNER 300x250]
+      </div>
+      <!-- ===== FIN DEL CÓDIGO DEL BANNER ===== -->
+    </div>
+  </div>
+
+  <!-- BOTONES DE INSTALACIÓN PWA Y NOTIFICACIONES (DEBAJO DEL BANNER) -->
   <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:12px;">
     <button id="btnInstalar" class="btn btn-primary">📲 Instalar App en tu teléfono</button>
     <button id="btnIos" class="btn btn-outline">📱 Agregar a la pantalla de inicio</button>
@@ -461,6 +492,7 @@
 
     const dynamicContent = document.getElementById('dynamicContent');
     const toast = document.getElementById('toast');
+    const adContainer = document.getElementById('adBannerContainer');
 
     let state = {
       view: 'single',
@@ -485,7 +517,10 @@
       return null;
     }
 
-    function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    // Scroll al inicio de la página para mostrar el banner primero
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     function showToast(message) {
       toast.textContent = message;
@@ -565,23 +600,46 @@
       document.body.removeChild(textarea);
     }
 
+    // 🔥 Función para refrescar el banner (recrea el contenedor para forzar nueva impresión)
+    function refreshBanner() {
+      // Si el banner tiene un script de Adsterra, lo recreamos
+      const placeholder = adContainer.querySelector('.ad-placeholder');
+      if (placeholder) {
+        // Guardamos el HTML actual del banner
+        const currentHTML = placeholder.innerHTML;
+        // Lo reemplazamos con el mismo contenido para forzar recarga
+        placeholder.innerHTML = currentHTML;
+        // Si Adsterra usa scripts, podemos intentar re-ejecutarlos
+        // (esto depende del tipo de anuncio)
+      }
+    }
+
+    // ===== RENDER VISTA SINGLE =====
     function renderSingleView(oracion) {
       state.view = 'single';
       state.oracionActual = oracion;
       saveState();
       updateUrl(oracion);
 
+      // Refrescamos el banner al cambiar de oración
+      refreshBanner();
+
       let html = '';
+
+      // Título y extracto
       if (oracion.titulo) {
         html += `<h2 style="color:#c9a05e; text-align:center; margin-bottom:6px; font-size:24px;">${oracion.titulo}</h2>`;
       }
       if (oracion.extracto) {
         html += `<p style="text-align:center; color:var(--text-secondary); font-size:16px; margin-bottom:12px;">${oracion.extracto}</p>`;
       }
+
+      // Video
       if (oracion.urlVideo) {
         html += `<div class="video-wrapper"><video controls playsinline preload="metadata"><source src="${oracion.urlVideo}" type="video/mp4">Tu navegador no soporta video.</video></div>`;
       }
 
+      // Botones de acción
       html += `
         <div class="action-buttons-inline">
           <button id="btnAleatoria" class="btn btn-outline">🔄 Otra oración</button>
@@ -591,6 +649,7 @@
         </div>
       `;
 
+      // Texto completo
       if (oracion.textoCompleto) {
         html += `<div class="oracion-texto">${oracion.textoCompleto}</div>`;
       }
@@ -601,6 +660,7 @@
 
       dynamicContent.innerHTML = html;
 
+      // Asignar eventos a los botones
       const btnAleatoria = document.getElementById('btnAleatoria');
       const btnLista = document.getElementById('btnLista');
       const btnCompartir = document.getElementById('btnCompartir');
@@ -642,12 +702,16 @@
       }
     }
 
+    // ===== VISTA LISTA =====
     function renderListView() {
       state.view = 'list';
       saveState();
       const url = new URL(window.location);
       url.searchParams.delete('id');
       window.history.pushState({}, '', url);
+
+      // Refrescamos el banner al entrar en lista
+      refreshBanner();
 
       let html = `
         <div style="margin-bottom:12px;">
@@ -676,6 +740,7 @@
       window.addEventListener('scroll', onScroll);
     }
 
+    // ===== CARGA POR LOTES =====
     function loadNextBatch() {
       const feed = document.getElementById('feedContainer');
       const loader = document.getElementById('loader');
@@ -733,6 +798,7 @@
       }
     }
 
+    // ===== SCROLL INFINITO =====
     let scrollTimeout;
     function onScroll() {
       if (state.view !== 'list') {
@@ -754,12 +820,16 @@
       }
     }
 
+    // ===== VISTA LECTURA =====
     function renderLectureView() {
       state.view = 'lecture';
       saveState();
       const url = new URL(window.location);
       url.searchParams.delete('id');
       window.history.pushState({}, '', url);
+
+      // Refrescamos el banner al entrar en lectura
+      refreshBanner();
 
       if (!state.lecturaData) {
         dynamicContent.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:20px;">Cargando lectura del día...</p>`;
@@ -832,6 +902,7 @@
       }
     }
 
+    // ===== INICIALIZACIÓN =====
     function init() {
       fetch(ORACIONES_URL)
         .then(res => {
@@ -973,7 +1044,6 @@
   // 6. NOTIFICACIONES PUSH CON FIREBASE
   // ============================================================
   (function() {
-    // 🔥 TU CONFIGURACIÓN DE FIREBASE (la que copiaste de Firebase Console)
     const firebaseConfig = {
       apiKey: "AIzaSyBbRxOI3RC6ErIsIVyWXc3MtLqKe_AJ3k8",
       authDomain: "el-santisimo-notificaciones.firebaseapp.com",
@@ -983,16 +1053,17 @@
       appId: "1:231660133924:web:0e0e7cb3c8695c89c702b1"
     };
 
-    // Inicializar Firebase (solo si no está ya inicializado)
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
     const messaging = firebase.messaging();
-
-    // 🔥 TU CLAVE VAPID (la que generaste en Firebase)
     const VAPID_KEY = 'BKBUfC3d50msVW-xzmAp1YlfifZ_miK1lnXbILoPVEcJkytwzMX9oaw7usuJ_VTwt-uL1hj4Wlx_hUS_w2A5b9Q';
 
-    // Función para solicitar permiso y obtener token
+    // Ignorar notificaciones en primer plano (las maneja el Service Worker)
+    messaging.onMessage((payload) => {
+      console.log('📩 Notificación en primer plano (ignorada):', payload);
+    });
+
     function requestNotificationPermission() {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
@@ -1002,7 +1073,6 @@
               console.log('📱 Token FCM:', token);
               localStorage.setItem('fcm_token', token);
               showToast('✅ Notificaciones activadas');
-              // Actualizar el texto del botón
               const notifBtn = document.getElementById('btnNotificaciones');
               if (notifBtn) {
                 notifBtn.textContent = '🔔 Notificaciones activadas';
@@ -1021,13 +1091,11 @@
       });
     }
 
-    // Si ya tiene permiso, obtener el token sin pedir de nuevo
     if (Notification.permission === 'granted') {
       messaging.getToken({ vapidKey: VAPID_KEY })
         .then(token => {
           console.log('📱 Token FCM (ya concedido):', token);
           localStorage.setItem('fcm_token', token);
-          // Actualizar el botón
           const notifBtn = document.getElementById('btnNotificaciones');
           if (notifBtn) {
             notifBtn.textContent = '🔔 Notificaciones activadas';
@@ -1037,7 +1105,6 @@
         })
         .catch(err => console.error('❌ Error al obtener token:', err));
     } else if (Notification.permission === 'denied') {
-      // Si está denegado, mostrar el botón pero con mensaje
       const notifBtn = document.getElementById('btnNotificaciones');
       if (notifBtn) {
         notifBtn.textContent = '🔔 Notificaciones bloqueadas';
@@ -1046,7 +1113,6 @@
       }
     }
 
-    // Evento del botón de notificaciones
     const notifBtn = document.getElementById('btnNotificaciones');
     if (notifBtn) {
       notifBtn.addEventListener('click', function() {
@@ -1060,7 +1126,6 @@
       });
     }
 
-    // Registrar el service worker de Firebase (si no está ya registrado)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/firebase-messaging-sw.js')
         .then(reg => console.log('✅ Firebase SW registrado:', reg))
