@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
+  <link rel="manifest" href="/manifest.json" />
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
   
@@ -8,7 +11,6 @@
   <title>El Santísimo - Oración del día</title>
   
   <!-- ===== METAETIQUETAS PARA COMPARTIR EN REDES SOCIALES ===== -->
-  <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
   <meta property="og:title" content="🕯️ Oración del día - El Santísimo te espera" />
   <meta property="og:description" content="Comparte esta oración con alguien que la necesite. Encuentra paz y fortaleza en la presencia de Jesús Eucaristía." />
   <meta property="og:image" content="https://i.postimg.cc/Cx1CdZj2/Copilot-20260825-005255.png" />
@@ -21,7 +23,7 @@
   <meta name="twitter:description" content="Comparte esta oración con alguien que la necesite." />
   <meta name="twitter:image" content="https://i.postimg.cc/Cx1CdZj2/Copilot-20260825-005255.png" />
   
-  <!-- Estilos (sin cambios) -->
+  <!-- Estilos -->
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
@@ -145,6 +147,12 @@
     }
     .toast.visible { opacity:1; }
 
+    /* Botones de instalación (ocultos por defecto) */
+    #btnInstalar, #btnIos {
+      display: none;
+      margin: 8px 0;
+    }
+
     @media (max-width:400px) {
       .header h1 { font-size:18px; }
       .header .app-badge { font-size:12px; padding:4px 12px; }
@@ -161,12 +169,17 @@
     <a href="#" id="downloadAppBtn" class="app-badge">📲 Descargar App</a>
   </div>
 
-  <!-- Banner de Adsterra (ya lo tenías) -->
-  <div class="ad-container" id="adFixed">
+  <!-- Banner de Adsterra (opcional, lo dejamos por si lo vuelves a poner) -->
+  <div class="ad-container" id="adFixed" style="display:none;">
     <div class="ad-placeholder">
-      <script async="async" data-cfasync="false" src="https://pl31223030.profitableratecpmnetwork.com/cd71cd25311e5803f3acf0b564892746/invoke.js"></script>
       <div id="container-cd71cd25311e5803f3acf0b564892746"></div>
     </div>
+  </div>
+
+  <!-- BOTONES DE INSTALACIÓN PWA -->
+  <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:12px;">
+    <button id="btnInstalar" class="btn btn-primary">📲 Instalar App</button>
+    <button id="btnIos" class="btn btn-outline">📱 Agregar a la pantalla de inicio</button>
   </div>
 
   <div id="dynamicContent"></div>
@@ -181,8 +194,9 @@
 </div>
 
 <script>
-  // Todo el script se mantiene EXACTAMENTE IGUAL que en tu código anterior.
-  // No he modificado nada del comportamiento, solo el head.
+  // ============================================================
+  // 1. TODA LA LÓGICA DE ORACIONES, LISTA, LECTURA, ETC. (SIN CAMBIOS)
+  // ============================================================
   (function() {
     const ORACIONES_URL = 'https://oraciones-api.vercel.app/oraciones.json';
     const LECTURAS_URL = 'https://oraciones-api.vercel.app/lecturas.json';
@@ -200,7 +214,6 @@
       lecturaData: null,
     };
 
-    // --- FUNCIONES DE PERSISTENCIA ---
     function saveState() {
       try {
         const toStore = { view: state.view, listIndex: state.listIndex };
@@ -216,7 +229,6 @@
       return null;
     }
 
-    // --- FUNCIONES AUXILIARES ---
     function openSmartlink(url) { window.open(url, '_blank'); }
     function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
@@ -226,7 +238,6 @@
       setTimeout(() => toast.classList.remove('visible'), 2500);
     }
 
-    // --- ACTUALIZAR URL CON ID ---
     function updateUrl(oracion) {
       if (!oracion || !oracion.id) return;
       const url = new URL(window.location);
@@ -234,37 +245,29 @@
       window.history.pushState({}, '', url);
     }
 
-    // --- OBTENER ID DE LA URL ---
     function getOracionIdFromUrl() {
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
       return id ? parseInt(id) : null;
     }
 
-    // --- COMPARTIR ORACIÓN (con enlace único) ---
     function compartirOracion(oracion) {
       if (!oracion) {
         showToast('❌ No hay oración para compartir');
         return;
       }
-
-      // Construir la URL con el id de la oración
       const baseUrl = window.location.origin + window.location.pathname;
       const shareUrl = baseUrl + '?id=' + oracion.id;
-
       const titulo = oracion.titulo || 'Oración del día';
       const extracto = oracion.extracto || 'Una oración para el alma';
-
       const textoLimpio = oracion.textoCompleto
         ? oracion.textoCompleto.replace(/<[^>]*>/g, '').substring(0, 500) + '...'
         : extracto;
-
       const shareData = {
         title: titulo,
         text: `🕯️ ${titulo}\n\n${textoLimpio}\n\n🙏 Comparte esta oración con alguien que la necesite.`,
         url: shareUrl,
       };
-
       if (navigator.share) {
         navigator.share(shareData)
           .then(() => showToast('✅ ¡Compartido con éxito!'))
@@ -307,13 +310,10 @@
       document.body.removeChild(textarea);
     }
 
-    // --- RENDER VISTA SINGLE ---
     function renderSingleView(oracion) {
       state.view = 'single';
       state.oracionActual = oracion;
       saveState();
-
-      // Actualizar la URL con el id
       updateUrl(oracion);
 
       let html = '';
@@ -346,7 +346,6 @@
 
       dynamicContent.innerHTML = html;
 
-      // Asignar eventos
       const btnAleatoria = document.getElementById('btnAleatoria');
       const btnLista = document.getElementById('btnLista');
       const btnCompartir = document.getElementById('btnCompartir');
@@ -387,12 +386,9 @@
       }
     }
 
-    // --- VISTA LISTA ---
     function renderListView() {
       state.view = 'list';
       saveState();
-
-      // Limpiar el parámetro id de la URL
       const url = new URL(window.location);
       url.searchParams.delete('id');
       window.history.pushState({}, '', url);
@@ -421,7 +417,6 @@
       window.addEventListener('scroll', onScroll);
     }
 
-    // --- CARGA POR LOTES ---
     function loadNextBatch() {
       const feed = document.getElementById('feedContainer');
       const loader = document.getElementById('loader');
@@ -478,7 +473,6 @@
       }
     }
 
-    // --- SCROLL INFINITO ---
     let scrollTimeout;
     function onScroll() {
       if (state.view !== 'list') {
@@ -500,12 +494,9 @@
       }
     }
 
-    // --- VISTA LECTURA ---
     function renderLectureView() {
       state.view = 'lecture';
       saveState();
-
-      // Limpiar el parámetro id de la URL
       const url = new URL(window.location);
       url.searchParams.delete('id');
       window.history.pushState({}, '', url);
@@ -581,7 +572,6 @@
       }
     }
 
-    // --- INICIALIZACIÓN ---
     function init() {
       fetch(ORACIONES_URL)
         .then(res => {
@@ -592,23 +582,19 @@
           state.allOraciones = data.oraciones || [];
           if (!state.allOraciones.length) throw new Error('No hay oraciones');
 
-          // 1. Verificar si hay un id en la URL
           const idFromUrl = getOracionIdFromUrl();
           let oracionInicial = null;
 
           if (idFromUrl) {
-            // Buscar la oración con ese id
             oracionInicial = state.allOraciones.find(o => o.id === idFromUrl);
             if (oracionInicial) {
-              // Si existe, la usamos
               state.oracionActual = oracionInicial;
               renderSingleView(oracionInicial);
               scrollToTop();
-              return; // Salir, ya renderizamos
+              return;
             }
           }
 
-          // 2. Si no hay id o no se encontró, usar la destacada o la guardada
           const saved = loadState();
           if (saved && saved.view === 'list') {
             state.view = 'list';
@@ -621,7 +607,6 @@
             return;
           }
 
-          // 3. Por defecto: mostrar la destacada
           const destacada = state.allOraciones.find(o => o.destacado === true);
           oracionInicial = destacada || state.allOraciones[0];
           state.oracionActual = oracionInicial;
@@ -660,14 +645,75 @@
           return;
         }
       }
-      // Si no hay id, ir a la destacada
       const destacada = state.allOraciones.find(o => o.destacado === true);
       if (destacada) renderSingleView(destacada);
     });
 
-    // Iniciar
     init();
   })();
+
+  // ============================================================
+  // 2. REGISTRO DEL SERVICE WORKER (PWA)
+  // ============================================================
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('✅ Service Worker registrado:', reg))
+      .catch(err => console.error('❌ Error al registrar SW:', err));
+  }
+
+  // ============================================================
+  // 3. BOTÓN DE INSTALACIÓN PERSONALIZADO (Android/Chrome)
+  // ============================================================
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('btnInstalar');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-flex';
+    console.log('📲 PWA instalable disponible');
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const result = await deferredPrompt.userChoice;
+      console.log('📲 Resultado instalación:', result.outcome);
+      if (result.outcome === 'accepted') {
+        showToast('✅ ¡App instalada con éxito!');
+      } else {
+        showToast('❌ Instalación cancelada');
+      }
+      installBtn.style.display = 'none';
+      deferredPrompt = null;
+    }
+  });
+
+  // Si la app se instala desde el navegador (no desde nuestro botón)
+  window.addEventListener('appinstalled', () => {
+    console.log('✅ App instalada correctamente');
+    installBtn.style.display = 'none';
+    showToast('✅ ¡Gracias por instalar nuestra app!');
+  });
+
+  // ============================================================
+  // 4. BOTÓN PARA iOS (no tiene beforeinstallprompt)
+  // ============================================================
+  const iosBtn = document.getElementById('btnIos');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  // También detectamos si está en modo "standalone" (ya instalada)
+  const isInStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isIOS && !isInStandalone) {
+    iosBtn.style.display = 'inline-flex';
+    iosBtn.addEventListener('click', function() {
+      showToast('📱 Presiona el botón "Compartir" y luego "Agregar a la pantalla de inicio"');
+    });
+  } else if (isIOS && isInStandalone) {
+    // Ya está instalada, no mostramos el botón
+    iosBtn.style.display = 'none';
+  }
 </script>
+
 </body>
 </html>
