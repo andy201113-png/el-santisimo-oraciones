@@ -58,6 +58,9 @@
       --lectura-blockquote-bg: #1a241a;
       --footer-border: #2a3a2a;
       --footer-text: #5a6a5a;
+      /* bottom bar */
+      --bottom-bar-bg: var(--bg-card);
+      --bottom-bar-border: var(--border-color);
     }
 
     [data-theme="light"] {
@@ -91,6 +94,8 @@
       --lectura-blockquote-bg: #f0ece6;
       --footer-border: #d4c9b8;
       --footer-text: #6a6a6a;
+      --bottom-bar-bg: var(--bg-card);
+      --bottom-bar-border: var(--border-color);
     }
 
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -105,7 +110,7 @@
       flex-direction:column;
       transition: background 0.3s ease, color 0.3s ease;
     }
-    .container { max-width:680px; margin:0 auto; width:100%; flex:1; }
+    .container { max-width:680px; margin:0 auto; width:100%; flex:1; padding-bottom: 70px; /* espacio para la barra inferior */ }
 
     /* --- Header --- */
     .header {
@@ -209,7 +214,7 @@
     }
     .btn-volver:hover { filter: brightness(1.1); }
 
-    /* --- Botones de comunidades --- */
+    /* --- Botones de comunidades (footer) --- */
     .btn-facebook {
       background: var(--btn-facebook-bg);
       color: var(--btn-facebook-text);
@@ -266,16 +271,18 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 280px;
+      min-height: auto; /* se ajusta al contenido */
       background: var(--bg-input);
       border-radius: 12px;
       border: 1px solid var(--border-color);
       transition: background 0.3s, border-color 0.3s;
+      padding: 8px; /* espacio interior */
     }
     #adBannerContainer .ad-placeholder {
       color: var(--text-muted);
       font-size: 14px;
       text-align: center;
+      width: 100%;
     }
 
     /* --- Contenido dinámico --- */
@@ -351,7 +358,8 @@
 
     /* --- Toast --- */
     .toast {
-      position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+      position:fixed; bottom:90px; /* para que no se solape con la barra inferior */
+      left:50%; transform:translateX(-50%);
       background: var(--toast-bg);
       color: var(--toast-text);
       padding:12px 24px;
@@ -363,16 +371,77 @@
     }
     .toast.visible { opacity:1; }
 
-    /* --- Botones de instalación y notificaciones --- */
-    #btnInstalar, #btnIos, #btnNotificaciones {
-      display: none;
-      margin: 4px 0;
-      font-size:18px;
-      padding:16px 28px;
-      min-height:60px;
+    /* ===== BARRA INFERIOR FIJA (BOTTOM BAR) ===== */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bottom-bar-bg);
+      border-top: 2px solid var(--bottom-bar-border);
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 999;
+      box-shadow: 0 -4px 16px var(--shadow-color);
+      flex-wrap: wrap;
+      gap: 6px;
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
     }
-    #btnNotificaciones {
+
+    /* Botones dentro de la barra inferior */
+    .bottom-bar .btn {
+      padding: 8px 14px;
+      font-size: 13px;
+      min-height: 40px;
+      flex: 0 1 auto;
+      border-radius: 30px;
+    }
+    .bottom-bar .btn-primary {
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+    }
+    .bottom-bar .btn-outline {
+      background: transparent;
+      border: 2px solid var(--btn-outline-border);
+      color: var(--btn-outline-text);
+    }
+    /* Botón mini WhatsApp en la barra inferior */
+    .bottom-bar .btn-whatsapp-mini {
+      background: #25D366;
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
       display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      min-height: 40px;
+    }
+    .bottom-bar .btn-whatsapp-mini:hover {
+      background: #1ebe5a;
+    }
+
+    /* Ajustes para móviles pequeños */
+    @media (max-width: 480px) {
+      .bottom-bar .btn {
+        font-size: 11px;
+        padding: 6px 10px;
+        min-height: 36px;
+      }
+      .bottom-bar .btn-whatsapp-mini {
+        font-size: 11px;
+        padding: 6px 10px;
+        min-height: 36px;
+      }
+      .container {
+        padding-bottom: 60px; /* menos espacio para la barra */
+      }
     }
 
     @media (max-width:400px) {
@@ -382,9 +451,8 @@
       .btn, .btn-lista, .btn-volver, .btn-facebook, .btn-whatsapp {
         font-size:15px; padding:12px 18px; min-height:48px;
       }
-      #btnInstalar, #btnIos, #btnNotificaciones { font-size:16px; padding:14px 20px; min-height:54px; }
       .theme-toggle { font-size:16px; padding:6px 12px; }
-      #adBannerContainer { min-height:250px; }
+      #adBannerContainer { min-height:auto; }
     }
   </style>
 </head>
@@ -400,20 +468,14 @@
     </div>
   </div>
 
-  <!-- ===== BANNER CUADRADO DE ADSTERRA (FRASE COMPACTA) ===== -->
-<div id="adBannerContainer" style="max-width:350px; margin: 0 auto 12px auto; padding: 10px 16px; background: var(--bg-input); border-radius:10px; border:1px solid var(--border-color); text-align:center; min-height: auto !important;">
-  <div style="font-size:14px; color:var(--text-secondary); line-height:1.4;">
-    🕯️ "La oración es el arma del cristiano"<br>
-    <span style="font-size:12px; opacity:0.8;">– San Juan Crisóstomo</span>
-  </div>
-</div>
-  </div>
+  <!-- ===== BANNER CUADRADO DE ADSTERRA (SIEMPRE ARRIBA) ===== -->
+  <div id="adBannerContainer">
+    <div class="ad-placeholder">
+<script async="async" data-cfasync="false" src="https://pl31223030.profitableratecpmnetwork.com/cd71cd25311e5803f3acf0b564892746/invoke.js"></script>
+<div id="container-cd71cd25311e5803f3acf0b564892746"></div>
 
-  <!-- BOTONES DE INSTALACIÓN PWA Y NOTIFICACIONES (DEBAJO DEL BANNER) -->
-  <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:12px;">
-    <button id="btnInstalar" class="btn btn-primary">📲 Instalar App en tu teléfono</button>
-    <button id="btnIos" class="btn btn-outline">📱 Agregar a la pantalla de inicio</button>
-    <button id="btnNotificaciones" class="btn btn-primary">🔔 Activar notificaciones</button>
+      <div id="container-cd71cd25311e5803f3acf0b564892746"></div>
+    </div>
   </div>
 
   <!-- CONTENIDO DINÁMICO -->
@@ -435,6 +497,16 @@
   </div>
 
   <div class="toast" id="toast"></div>
+</div>
+
+<!-- ===== BARRA INFERIOR FIJA (BOTTOM BAR) ===== -->
+<div class="bottom-bar">
+  <button id="btnInstalar" class="btn btn-primary" style="display:none;">📲 Instalar</button>
+  <button id="btnIos" class="btn btn-outline" style="display:none;">📱 iOS</button>
+  <button id="btnNotificaciones" class="btn btn-outline">🔔 Notif.</button>
+  <a href="https://chat.whatsapp.com/DqxKdHMynG5KxYLjUnpvYJ" target="_blank" class="btn-whatsapp-mini">
+    💬 Grupo
+  </a>
 </div>
 
 <script>
@@ -597,17 +669,12 @@
       document.body.removeChild(textarea);
     }
 
-    // 🔥 Función para refrescar el banner (recrea el contenedor para forzar nueva impresión)
+    // Función para refrescar el banner (recrea el contenedor para forzar nueva impresión)
     function refreshBanner() {
-      // Si el banner tiene un script de Adsterra, lo recreamos
       const placeholder = adContainer.querySelector('.ad-placeholder');
       if (placeholder) {
-        // Guardamos el HTML actual del banner
         const currentHTML = placeholder.innerHTML;
-        // Lo reemplazamos con el mismo contenido para forzar recarga
         placeholder.innerHTML = currentHTML;
-        // Si Adsterra usa scripts, podemos intentar re-ejecutarlos
-        // (esto depende del tipo de anuncio)
       }
     }
 
@@ -707,7 +774,6 @@
       url.searchParams.delete('id');
       window.history.pushState({}, '', url);
 
-      // Refrescamos el banner al entrar en lista
       refreshBanner();
 
       let html = `
@@ -825,7 +891,6 @@
       url.searchParams.delete('id');
       window.history.pushState({}, '', url);
 
-      // Refrescamos el banner al entrar en lectura
       refreshBanner();
 
       if (!state.lecturaData) {
@@ -988,7 +1053,7 @@
   }
 
   // ============================================================
-  // 4. BOTÓN DE INSTALACIÓN
+  // 4. BOTÓN DE INSTALACIÓN (en la barra inferior)
   // ============================================================
   let deferredPrompt = null;
   const installBtn = document.getElementById('btnInstalar');
@@ -1022,7 +1087,7 @@
   });
 
   // ============================================================
-  // 5. BOTÓN PARA iOS
+  // 5. BOTÓN PARA iOS (en la barra inferior)
   // ============================================================
   const iosBtn = document.getElementById('btnIos');
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -1072,9 +1137,9 @@
               showToast('✅ Notificaciones activadas');
               const notifBtn = document.getElementById('btnNotificaciones');
               if (notifBtn) {
-                notifBtn.textContent = '🔔 Notificaciones activadas';
-                notifBtn.classList.remove('btn-primary');
-                notifBtn.classList.add('btn-outline');
+                notifBtn.textContent = '🔔 Activas';
+                notifBtn.classList.remove('btn-outline');
+                notifBtn.classList.add('btn-primary');
               }
             })
             .catch(err => {
@@ -1088,6 +1153,7 @@
       });
     }
 
+    // Si ya tiene permiso, obtener token y actualizar botón
     if (Notification.permission === 'granted') {
       messaging.getToken({ vapidKey: VAPID_KEY })
         .then(token => {
@@ -1095,16 +1161,16 @@
           localStorage.setItem('fcm_token', token);
           const notifBtn = document.getElementById('btnNotificaciones');
           if (notifBtn) {
-            notifBtn.textContent = '🔔 Notificaciones activadas';
-            notifBtn.classList.remove('btn-primary');
-            notifBtn.classList.add('btn-outline');
+            notifBtn.textContent = '🔔 Activas';
+            notifBtn.classList.remove('btn-outline');
+            notifBtn.classList.add('btn-primary');
           }
         })
         .catch(err => console.error('❌ Error al obtener token:', err));
     } else if (Notification.permission === 'denied') {
       const notifBtn = document.getElementById('btnNotificaciones');
       if (notifBtn) {
-        notifBtn.textContent = '🔔 Notificaciones bloqueadas';
+        notifBtn.textContent = '🔔 Bloqueadas';
         notifBtn.classList.remove('btn-primary');
         notifBtn.classList.add('btn-outline');
       }
@@ -1130,11 +1196,6 @@
     }
   })();
 </script>
-
-<script src="https://pl31255676.profitableratecpmnetwork.com/b9/15/29/b91529d6a4b1405fab9b91c580a64cfc.js"></script>
-
-<script src="https://pl31255693.profitableratecpmnetwork.com/f2/49/b7/f249b76774ecfd54e7e7fd31f58b451d.js"></script>
-
 
 </body>
 </html>
